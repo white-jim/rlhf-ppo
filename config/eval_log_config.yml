@@ -1,0 +1,23 @@
+project_name: "rlhf-ppo-finetune"
+output_dir: "outputs"
+save_dir: "checkpoints"
+log_dir: "logs"
+
+save_freq: 10
+eval_freq: 10
+log_freq: 1
+
+save_total_limit: 5
+
+logging:
+  enable_wandb: false
+  enable_tensorboard: true
+  log_level: "INFO"
+
+evaluation:
+  num_samples: 10
+  reference_model: null
+  metrics:
+    - "perplexity"
+    - "reward_mean"
+    - "reward_std"

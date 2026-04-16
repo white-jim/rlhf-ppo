@@ -1,0 +1,41 @@
+model_name: "Qwen/Qwen2.5-7B-Instruct"
+model_path: "models/qwen2.5-7b-instruct"
+tokenizer_path: "models/qwen2.5-7b-instruct"
+
+device: "cuda"
+dtype: "bfloat16"
+
+max_seq_len: 1024
+max_new_tokens: 512
+
+temperature: 0.7
+top_p: 0.9
+top_k: 50
+
+use_flash_attention: true
+use_gradient_checkpointing: true
+
+datasets:
+  hh_rlhf:
+    name: "Anthropic/hh-rlhf"
+    raw_dir: "data/hh-rlhf/raw"
+    processed_dir: "data/hh-rlhf/processed"
+    train_path: "data/hh-rlhf/processed/train.jsonl"
+    val_path: "data/hh-rlhf/processed/val.jsonl"
+    prompt_template: "User: {prompt}\nAssistant:"
+    response_template: "{response}"
+  current_dataset: "hh_rlhf"
+
+lora:
+  enable: true
+  r: 8
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
