@@ -18,6 +18,7 @@ use_gradient_checkpointing: true
 datasets:
   coig_cqia:
     name: "m-a-p/COIG-CQIA"
+    configs: ["zhihu", "douban", "wikihow", "wiki", "segmentfault"]
     raw_dir: "data/coig-cqia/raw"
     processed_dir: "data/coig-cqia/processed"
     train_path: "data/coig-cqia/processed/train.jsonl"

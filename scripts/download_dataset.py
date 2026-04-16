@@ -59,17 +59,18 @@ def process_and_save_dataset(dataset, output_path, dataset_name):
     processed_data = []
     
     for item in dataset:
-        chosen_dialogue = item["chosen"]
-        rejected_dialogue = item["rejected"]
-        
-        prompt, chosen_response = extract_last_turn(chosen_dialogue)
-        _, rejected_response = extract_last_turn(rejected_dialogue)
-        
-        processed_data.append({
-            "prompt": prompt,
-            "chosen": chosen_response,
-            "rejected": rejected_response
-        })
+        if isinstance(item, dict) and "chosen" in item and "rejected" in item:
+            chosen_dialogue = item["chosen"]
+            rejected_dialogue = item["rejected"]
+            
+            prompt, chosen_response = extract_last_turn(chosen_dialogue)
+            _, rejected_response = extract_last_turn(rejected_dialogue)
+            
+            processed_data.append({
+                "prompt": prompt,
+                "chosen": chosen_response,
+                "rejected": rejected_response
+            })
     
     with open(output_path, "w", encoding="utf-8") as f:
         for item in processed_data:
@@ -93,22 +94,53 @@ def main():
     raw_dir.mkdir(parents=True, exist_ok=True)
     processed_dir.mkdir(parents=True, exist_ok=True)
     
-    dataset = load_dataset(dataset_config["name"])
-    
-    print(f"原始数据集保存到: {raw_dir.resolve()}")
-    dataset.save_to_disk(raw_dir)
-    
-    print("\n正在处理数据集...")
-    
-    train_count = process_and_save_dataset(dataset["train"], str(train_path), dataset_config["name"])
-    if "test" in dataset:
-        val_count = process_and_save_dataset(dataset["test"], str(val_path), dataset_config["name"])
-    elif "validation" in dataset:
-        val_count = process_and_save_dataset(dataset["validation"], str(val_path), dataset_config["name"])
+    if dataset_config["name"] == "m-a-p/COIG-CQIA" and "configs" in dataset_config:
+        all_train_data = []
+        all_val_data = []
+        
+        for config_name in dataset_config["configs"]:
+            print(f"\n正在加载配置: {config_name}")
+            
+            try:
+                dataset = load_dataset(dataset_config["name"], config_name)
+                
+                config_raw_dir = raw_dir / config_name
+                dataset.save_to_disk(config_raw_dir)
+                
+                if "train" in dataset:
+                    all_train_data.extend(list(dataset["train"]))
+                if "test" in dataset:
+                    all_val_data.extend(list(dataset["test"]))
+                elif "validation" in dataset:
+                    all_val_data.extend(list(dataset["validation"]))
+                
+                print(f"  配置 {config_name} 加载完成")
+            except Exception as e:
+                print(f"  加载配置 {config_name} 失败: {e}")
+        
+        print(f"\n原始数据集保存到: {raw_dir.resolve()}")
+        
+        print("\n正在处理数据集...")
+        
+        train_count = process_and_save_dataset(all_train_data, str(train_path), dataset_config["name"])
+        val_count = process_and_save_dataset(all_val_data, str(val_path), dataset_config["name"]) if all_val_data else 0
     else:
-        val_count = 0
+        dataset = load_dataset(dataset_config["name"])
+        
+        print(f"原始数据集保存到: {raw_dir.resolve()}")
+        dataset.save_to_disk(raw_dir)
+        
+        print("\n正在处理数据集...")
+        
+        train_count = process_and_save_dataset(dataset["train"], str(train_path), dataset_config["name"])
+        if "test" in dataset:
+            val_count = process_and_save_dataset(dataset["test"], str(val_path), dataset_config["name"])
+        elif "validation" in dataset:
+            val_count = process_and_save_dataset(dataset["validation"], str(val_path), dataset_config["name"])
+        else:
+            val_count = 0
     
-    print(f"数据集处理完成!")
+    print(f"\n数据集处理完成!")
     print(f"训练集: {train_count} 条")
     print(f"验证集: {val_count} 条")
     print(f"原始数据保存到: {raw_dir.resolve()}")
