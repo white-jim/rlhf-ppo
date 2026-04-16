@@ -29,12 +29,6 @@ def main():
         default="config/eval_log_config.yml",
         help="Path to eval/log config file"
     )
-    parser.add_argument(
-        "--num_epochs",
-        type=int,
-        default=1,
-        help="Number of training epochs"
-    )
     
     args = parser.parse_args()
     
@@ -44,7 +38,7 @@ def main():
         eval_log_config_path=args.eval_log_config
     )
     
-    trainer.train(num_epochs=args.num_epochs)
+    trainer.train()
 
 
 if __name__ == "__main__":

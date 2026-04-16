@@ -1,4 +1,5 @@
 import os
+import random
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 from pathlib import Path
 from datasets import load_dataset
@@ -122,8 +123,15 @@ def main():
         
         print("\n正在处理数据集...")
         
-        train_count = process_and_save_dataset(all_train_data, str(train_path), dataset_config["name"])
-        val_count = process_and_save_dataset(all_val_data, str(val_path), dataset_config["name"]) if all_val_data else 0
+        val_ratio = 0.05
+        random.shuffle(all_train_data)
+        split_idx = int(len(all_train_data) * (1 - val_ratio))
+        
+        final_train_data = all_train_data[:split_idx]
+        final_val_data = all_train_data[split_idx:]
+        
+        train_count = process_and_save_dataset(final_train_data, str(train_path), dataset_config["name"])
+        val_count = process_and_save_dataset(final_val_data, str(val_path), dataset_config["name"]) if final_val_data else 0
     else:
         dataset = load_dataset(dataset_config["name"])
         

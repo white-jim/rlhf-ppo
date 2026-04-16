@@ -155,9 +155,11 @@ class PPOTrainer:
         
         print(f"模型已保存到: {save_path}")
     
-    def train(self, num_epochs=1):
+    def train(self):
         self.setup()
         train_dataloader = self.prepare_dataloader()
+        
+        num_epochs = self.ppo_config.get("num_train_epochs", 1)
         
         print(f"开始训练，共 {num_epochs} 个 epoch...")
         
