@@ -12,18 +12,63 @@ def load_config():
         return yaml.safe_load(f)
 
 
-def process_and_save_dataset(dataset, output_path):
+def process_coig_cqia_dataset(dataset, output_path):
     processed_data = []
     
     for item in dataset:
-        prompt = item["prompt"]
-        chosen = item["chosen"]
-        rejected = item["rejected"]
+        instruction = item.get("instruction", "").strip()
+        input_context = item.get("input", "").strip()
+        
+        if input_context:
+            prompt = f"{instruction}\n{input_context}".strip()
+        else:
+            prompt = instruction
+        
+        processed_data.append({
+            "prompt": prompt
+        })
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        for item in processed_data:
+            f.write(json.dumps(item, ensure_ascii=False) + "\n")
+    
+    return len(processed_data)
+
+
+def extract_last_turn(dialogue):
+    lines = dialogue.strip().split("\n\n")
+    
+    last_human = ""
+    last_assistant = ""
+    
+    for line in reversed(lines):
+        line = line.strip()
+        if line.startswith("Assistant:") and not last_assistant:
+            last_assistant = line[len("Assistant:"):].strip()
+        elif line.startswith("Human:") and last_assistant:
+            last_human = line[len("Human:"):].strip()
+            break
+    
+    return last_human, last_assistant
+
+
+def process_and_save_dataset(dataset, output_path, dataset_name):
+    if dataset_name == "m-a-p/COIG-CQIA":
+        return process_coig_cqia_dataset(dataset, output_path)
+    
+    processed_data = []
+    
+    for item in dataset:
+        chosen_dialogue = item["chosen"]
+        rejected_dialogue = item["rejected"]
+        
+        prompt, chosen_response = extract_last_turn(chosen_dialogue)
+        _, rejected_response = extract_last_turn(rejected_dialogue)
         
         processed_data.append({
             "prompt": prompt,
-            "chosen": chosen,
-            "rejected": rejected
+            "chosen": chosen_response,
+            "rejected": rejected_response
         })
     
     with open(output_path, "w", encoding="utf-8") as f:
@@ -55,8 +100,13 @@ def main():
     
     print("\n正在处理数据集...")
     
-    train_count = process_and_save_dataset(dataset["train"], str(train_path))
-    val_count = process_and_save_dataset(dataset["test"], str(val_path))
+    train_count = process_and_save_dataset(dataset["train"], str(train_path), dataset_config["name"])
+    if "test" in dataset:
+        val_count = process_and_save_dataset(dataset["test"], str(val_path), dataset_config["name"])
+    elif "validation" in dataset:
+        val_count = process_and_save_dataset(dataset["validation"], str(val_path), dataset_config["name"])
+    else:
+        val_count = 0
     
     print(f"数据集处理完成!")
     print(f"训练集: {train_count} 条")

@@ -16,6 +16,22 @@ use_flash_attention: true
 use_gradient_checkpointing: true
 
 datasets:
+  coig_cqia:
+    name: "m-a-p/COIG-CQIA"
+    raw_dir: "data/coig-cqia/raw"
+    processed_dir: "data/coig-cqia/processed"
+    train_path: "data/coig-cqia/processed/train.jsonl"
+    val_path: "data/coig-cqia/processed/val.jsonl"
+    prompt_template: "User: {prompt}\nAssistant:"
+    response_template: "{response}"
+  ultrafeedback:
+    name: "hiyouga/ultrafeedback_binarized"
+    raw_dir: "data/ultrafeedback/raw"
+    processed_dir: "data/ultrafeedback/processed"
+    train_path: "data/ultrafeedback/processed/train.jsonl"
+    val_path: "data/ultrafeedback/processed/val.jsonl"
+    prompt_template: "User: {prompt}\nAssistant:"
+    response_template: "{response}"
   hh_rlhf:
     name: "Anthropic/hh-rlhf"
     raw_dir: "data/hh-rlhf/raw"
@@ -24,7 +40,7 @@ datasets:
     val_path: "data/hh-rlhf/processed/val.jsonl"
     prompt_template: "User: {prompt}\nAssistant:"
     response_template: "{response}"
-  current_dataset: "hh_rlhf"
+  current_dataset: "coig_cqia"
 
 lora:
   enable: true
