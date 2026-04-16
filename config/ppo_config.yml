@@ -11,5 +11,16 @@ lam: 0.95
 value_loss_coef: 0.5
 entropy_coef: 0.01
 
-learning_rate: 1e-5
+learning_rate:
+  backbone: 1e-6
+  value_head: 1e-5
+
 max_grad_norm: 1.0
+
+reward_model:
+  name: "internlm/internlm2-7b-reward"
+  path: "models/internlm2-7b-reward"
+  device: "cuda"
+  dtype: "bfloat16"
+  prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n{response}<|im_end|>"
+
