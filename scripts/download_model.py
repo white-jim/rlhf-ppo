@@ -38,7 +38,7 @@
 # import os
 # os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 # from huggingface_hub import list_repo_files
-# for f in list_repo_files("Qwen/Qwen2.5-7B-Instruct"):
+# for f in list_repo_files("internlm/internlm2-7b-reward"):
 #     print(f)
 
 
