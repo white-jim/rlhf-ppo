@@ -136,12 +136,11 @@ class RewardModel(nn.Module):
     @contextmanager
     def inference_mode(self):
         with torch.inference_mode():
-            # autocast dtype kwarg requires PyTorch >= 1.10; fall back gracefully
             try:
-                with torch.cuda.amp.autocast(dtype=self.model.dtype):
+                with torch.amp.autocast("cuda", dtype=self.model.dtype):
                     yield
             except TypeError:
-                with torch.cuda.amp.autocast():
+                with torch.amp.autocast("cuda"):
                     yield
 
     def format_input(self, prompt, response):
@@ -151,7 +150,8 @@ class RewardModel(nn.Module):
         with self.inference_mode():
             outputs = self.model(
                 input_ids=input_ids,
-                attention_mask=attention_mask
+                attention_mask=attention_mask,
+                use_cache=False,
             )
             # Handle different output formats
             if self._output_attr == "direct":

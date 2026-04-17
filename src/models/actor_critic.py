@@ -12,13 +12,15 @@ class ActorCritic(nn.Module):
         self.model = AutoModelForCausalLM.from_pretrained(
             model_config["model_path"],
             torch_dtype=getattr(torch, model_config["dtype"]),
-            device_map="auto"
+            device_map="auto",
+            local_files_only=True,
         )
-        
+
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_config["tokenizer_path"],
             padding_side="left",
-            truncation_side="right"
+            truncation_side="right",
+            local_files_only=True,
         )
         
         if self.tokenizer.pad_token is None:
@@ -40,6 +42,8 @@ class ActorCritic(nn.Module):
 
         if model_config.get("use_gradient_checkpointing", False):
             self.model.gradient_checkpointing_enable()
+            # gradient checkpointing is incompatible with use_cache
+            self.model.config.use_cache = False
 
         # Move value_head to the same device as the model's first parameter
         model_device = next(self.model.parameters()).device

@@ -40,8 +40,9 @@ class RolloutCollector:
             return_tensors="pt"
         )
         
-        input_ids = prompt_encodings["input_ids"].to(self.actor_critic.model.device)
-        attention_mask = prompt_encodings["attention_mask"].to(self.actor_critic.model.device)
+        _actor_device = next(self.actor_critic.model.parameters()).device
+        input_ids = prompt_encodings["input_ids"].to(_actor_device)
+        attention_mask = prompt_encodings["attention_mask"].to(_actor_device)
         
         prompt_lengths = [len(ids) for ids in prompt_encodings["input_ids"]]
         
@@ -129,15 +130,15 @@ class RolloutCollector:
     def compute_rewards(self, prompts, responses, action_log_probs, ref_log_probs, prompt_lengths, kl_coef):
         batch_size, seq_len = action_log_probs.shape
         
-        rm_rewards = self.reward_model.compute_reward(prompts, responses)
-        
+        rm_rewards = self.reward_model.compute_reward(prompts, responses).view(-1)
+
         rewards = torch.zeros_like(action_log_probs)
-        
-        kl_divergences = action_log_probs - ref_log_probs
+
+        kl_divergences = action_log_probs - ref_log_probs.to(action_log_probs.device)
         
         for i, prompt_len in enumerate(prompt_lengths):
             rewards[i, prompt_len:-1] = -kl_coef * kl_divergences[i, prompt_len:-1]
-            rewards[i, -1] = rm_rewards[i].item() - kl_coef * kl_divergences[i, -1]
+            rewards[i, -1] = rm_rewards[i].to(rewards.device) - kl_coef * kl_divergences[i, -1]
         
         return rewards, kl_divergences
     

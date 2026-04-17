@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 from ..data import RLHFDataset, PromptOnlyCollator
 from ..models import ActorCritic, ReferenceModel, RewardModel
-from .rollout import RolloutCollector
+from .rollout import RolloutCollector, RolloutBatch
 from .advantage import compute_gae_advantages, normalize_advantages
 from .loss import compute_ppo_loss
 
@@ -197,15 +197,26 @@ class PPOTrainer:
                 
                 for ppo_epoch in range(ppo_epochs):
                     random.shuffle(indices)
-                    
+
                     for start_idx in range(0, batch_size, mini_batch_size):
                         end_idx = min(start_idx + mini_batch_size, batch_size)
                         mb_indices = indices[start_idx:end_idx]
-                        
+
+                        mb_rollout = RolloutBatch(
+                            input_ids=rollout_batch.input_ids[mb_indices],
+                            attention_mask=rollout_batch.attention_mask[mb_indices],
+                            action_log_probs=rollout_batch.action_log_probs[mb_indices],
+                            ref_log_probs=rollout_batch.ref_log_probs[mb_indices],
+                            values=rollout_batch.values[mb_indices],
+                            rewards=rollout_batch.rewards[mb_indices],
+                            prompts=[rollout_batch.prompts[i] for i in mb_indices],
+                            responses=[rollout_batch.responses[i] for i in mb_indices],
+                            prompt_lengths=[rollout_batch.prompt_lengths[i] for i in mb_indices],
+                        )
                         mb_loss_mask = loss_mask[mb_indices]
-                        
+
                         losses = self.train_step(
-                            rollout_batch,
+                            mb_rollout,
                             normalized_advantages[mb_indices],
                             returns[mb_indices],
                             mb_loss_mask
