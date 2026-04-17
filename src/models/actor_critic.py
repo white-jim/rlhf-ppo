@@ -87,6 +87,6 @@ class ActorCritic(nn.Module):
                 backbone_params.append(param)
         
         return [
-            {"params": backbone_params, "lr": lr_config["backbone"]},
-            {"params": value_head_params, "lr": lr_config["value_head"]}
+            {"params": backbone_params, "lr": float(lr_config["backbone"])},
+            {"params": value_head_params, "lr": float(lr_config["value_head"])}
         ]
