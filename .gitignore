@@ -37,6 +37,10 @@ venv.bak/
 .claude/
 .trae/
 .idea/
+.cursor/
+.codex/
+.windsurf/
+.continue/
 *.swp
 *.swo
 *~
