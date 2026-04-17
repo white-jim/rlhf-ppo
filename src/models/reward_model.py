@@ -9,9 +9,22 @@ class RewardModel(nn.Module):
         super().__init__()
         self.reward_config = reward_config
         self.prompt_template = reward_config["prompt_template"]
-        
+
+        # Load config and fix RoPE scaling compatibility issue
+        config = AutoConfig.from_pretrained(
+            reward_config["path"],
+            trust_remote_code=True,
+            local_files_only=True
+        )
+
+        # Fix rope_scaling format for InternLM2 compatibility
+        if hasattr(config, "rope_scaling") and config.rope_scaling is not None:
+            if "rope_type" in config.rope_scaling and "type" not in config.rope_scaling:
+                config.rope_scaling["type"] = config.rope_scaling["rope_type"]
+
         self.model = AutoModel.from_pretrained(
             reward_config["path"],
+            config=config,
             torch_dtype=getattr(torch, reward_config["dtype"]),
             device_map="auto",
             trust_remote_code=True,
