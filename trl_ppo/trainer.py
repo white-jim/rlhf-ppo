@@ -10,7 +10,8 @@ from typing import List
 
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel, AutoConfig
 from peft import LoraConfig, get_peft_model
-from trl import PPOTrainer, PPOConfig, AutoModelForCausalLMWithValueHead
+from trl.experimental.ppo import PPOTrainer, PPOConfig
+from trl.models import AutoModelForCausalLMWithValueHead
 
 
 def load_config(path: str) -> dict:
@@ -201,22 +202,19 @@ class TRLPPOTrainer:
         print("Loading reward model...")
         reward_model = RewardModel(cfg["reward_model"])
 
-        # PPOConfig
+        # PPOConfig - TRL v1.0+ compatible parameters
         ppo_config = PPOConfig(
-            model_name=cfg["model_name"],
             learning_rate=float(ppo_cfg_dict["learning_rate"]),
             batch_size=ppo_cfg_dict["batch_size"],
             mini_batch_size=ppo_cfg_dict["mini_batch_size"],
-            ppo_epochs=ppo_cfg_dict["ppo_epochs"],
+            num_ppo_epochs=ppo_cfg_dict["ppo_epochs"],
             gamma=ppo_cfg_dict["gamma"],
             lam=ppo_cfg_dict["lam"],
-            cliprange=ppo_cfg_dict["clip_range"],
+            clip_range=ppo_cfg_dict["clip_range"],
             vf_coef=ppo_cfg_dict["vf_coef"],
-            target_kl=ppo_cfg_dict["target_kl"],
-            kl_penalty=ppo_cfg_dict["kl_penalty"],
+            kl_coef=ppo_cfg_dict["target_kl"],
             max_grad_norm=ppo_cfg_dict["max_grad_norm"],
             log_with=None,
-            project_kwargs={"logging_dir": str(self.output_dir / "logs")},
         )
 
         trainer = PPOTrainer(
