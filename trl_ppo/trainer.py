@@ -29,50 +29,72 @@ def load_config(path: str) -> dict:
 #   reward_logits = model.score(output.hidden_states[-1])
 # ---------------------------------------------------------------------------
 
-class _DeviceMovingBackbone(nn.Module):
-    """Moves inputs to the backbone's device, runs forward, moves hidden_states back to the caller's device.
+class _FakeOutput:
+    """Minimal stand-in for a transformer output that only carries hidden_states."""
+    def __init__(self, hidden_states):
+        self.hidden_states = hidden_states
 
-    This lets the reward model live on a different GPU from the policy while still satisfying
-    TRL's get_reward() which indexes reward_logits with sequence_lengths — both must be on the
-    same device, and sequence_lengths is always on the Accelerator's device (cuda:0).
+
+class _RetokenizingBackbone(nn.Module):
+    """Decode policy token IDs → text → re-encode with reward tokenizer → run reward backbone.
+
+    TRL's get_reward() indexes reward_logits at sequence_lengths computed from the *policy*
+    sequence.  To make that work after re-tokenization (which changes sequence length), we
+    take the final hidden state of the reward sequence and broadcast it to every position of
+    the policy sequence — so the indexed value is always the correct reward regardless of
+    which position sequence_lengths points to.
     """
 
-    def __init__(self, backbone: nn.Module):
+    def __init__(self, backbone: nn.Module, policy_tokenizer, reward_tokenizer):
         super().__init__()
         self._backbone = backbone
+        self._policy_tok = policy_tokenizer
+        self._reward_tok = reward_tokenizer
 
     def forward(self, input_ids=None, attention_mask=None, position_ids=None, **kwargs):
         model_device = next(self._backbone.parameters()).device
-        src_device = input_ids.device if input_ids is not None else model_device
+        batch_size, policy_seq_len = input_ids.shape
+        src_device = input_ids.device
 
-        if input_ids is not None:
-            input_ids = input_ids.to(model_device)
-            # Policy vocab (Qwen2.5: 152064) may exceed reward model vocab (InternLM2: 92544).
-            # Clamp OOV token IDs to avoid embedding lookup assertion failures.
-            vocab_size = self._backbone.config.vocab_size
-            input_ids = input_ids.clamp(0, vocab_size - 1)
-        if attention_mask is not None:
-            attention_mask = attention_mask.to(model_device)
-        if position_ids is not None:
-            position_ids = position_ids.to(model_device)
+        # 1. Decode policy token IDs → plain text
+        texts = self._policy_tok.batch_decode(input_ids.cpu(), skip_special_tokens=True)
 
+        # 2. Re-encode with reward tokenizer
+        enc = self._reward_tok(
+            texts,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=policy_seq_len,
+        )
+        reward_input_ids = enc["input_ids"].to(model_device)
+        reward_attn_mask = enc["attention_mask"].to(model_device)
+
+        # 3. Run reward backbone
         output = self._backbone(
-            input_ids=input_ids,
-            attention_mask=attention_mask,
-            position_ids=position_ids,
-            **kwargs,
+            input_ids=reward_input_ids,
+            attention_mask=reward_attn_mask,
+            output_hidden_states=True,
+            use_cache=False,
+            return_dict=True,
         )
 
-        if hasattr(output, "hidden_states") and output.hidden_states is not None:
-            output.hidden_states = tuple(h.to(src_device) for h in output.hidden_states)
+        # 4. Extract the last non-pad hidden state for each sequence → [batch, hidden_size]
+        last_pos = reward_attn_mask.sum(dim=1) - 1
+        final_hidden = output.hidden_states[-1][
+            torch.arange(batch_size, device=model_device), last_pos
+        ]
 
-        return output
+        # 5. Broadcast to policy sequence length so TRL's sequence_lengths indexing is safe
+        expanded = final_hidden.unsqueeze(1).expand(-1, policy_seq_len, -1).to(src_device)
+
+        return _FakeOutput(hidden_states=(expanded,))
 
 
 class InternLM2RewardWrapper(nn.Module):
     base_model_prefix = "model"
 
-    def __init__(self, reward_cfg: dict):
+    def __init__(self, reward_cfg: dict, policy_tokenizer):
         super().__init__()
         dtype = getattr(torch, reward_cfg.get("dtype", "bfloat16"))
         device = reward_cfg.get("device", "cuda")
@@ -115,7 +137,10 @@ class InternLM2RewardWrapper(nn.Module):
         self._score.eval()
         self._score.requires_grad_(False)
 
-        self.model = _DeviceMovingBackbone(_backbone)
+        reward_tokenizer = AutoTokenizer.from_pretrained(
+            reward_cfg["path"], trust_remote_code=True, local_files_only=True
+        )
+        self.model = _RetokenizingBackbone(_backbone, policy_tokenizer, reward_tokenizer)
         self.config = config
 
     def score(self, hidden_states: torch.Tensor) -> torch.Tensor:
@@ -225,7 +250,7 @@ class TRLPPOTrainer:
 
         # Reward model
         print("Loading reward model...")
-        reward_model = InternLM2RewardWrapper(cfg["reward_model"])
+        reward_model = InternLM2RewardWrapper(cfg["reward_model"], policy_tokenizer=tokenizer)
 
         # Dataset
         print("Preparing dataset...")
@@ -237,6 +262,7 @@ class TRLPPOTrainer:
             learning_rate=float(ppo_cfg_dict["learning_rate"]),
             per_device_train_batch_size=ppo_cfg_dict["batch_size"],
             num_mini_batches=ppo_cfg_dict.get("num_mini_batches", 1),
+            local_rollout_forward_batch_size=ppo_cfg_dict.get("local_rollout_forward_batch_size", 2),
             num_ppo_epochs=ppo_cfg_dict["ppo_epochs"],
             gamma=ppo_cfg_dict["gamma"],
             lam=ppo_cfg_dict["lam"],

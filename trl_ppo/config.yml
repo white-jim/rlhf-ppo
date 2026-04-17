@@ -32,8 +32,9 @@ dataset:
 # PPO hyperparameters
 ppo:
   learning_rate: 1.41e-5
-  batch_size: 8
-  num_mini_batches: 4        # how many mini-batches to split each batch into
+  batch_size: 2
+  num_mini_batches: 1        # batch_size=2 时不宜再拆分
+  local_rollout_forward_batch_size: 2   # 默认64，单卡7B必须调小
   ppo_epochs: 4
   gamma: 0.99
   lam: 0.95
@@ -42,12 +43,12 @@ ppo:
   kl_coef: 0.05              # initial KL penalty coefficient
   max_grad_norm: 1.0
 
-max_prompt_length: 512
+max_prompt_length: 256
 use_gradient_checkpointing: true
 
 # Generation
 generation:
-  max_new_tokens: 512
+  max_new_tokens: 256
   temperature: 0.7
   top_p: 0.9
   top_k: 50
