@@ -1,0 +1,69 @@
+# Model
+model_name: "Qwen/Qwen2.5-7B-Instruct"
+model_path: "models/qwen2.5-7b-instruct"
+tokenizer_path: "models/qwen2.5-7b-instruct"
+dtype: "bfloat16"
+
+# Device map for each model component.
+# Use "auto" to let HuggingFace decide, or a single device like "cuda:0",
+# or a layer-level dict. actor and ref_model share the same base weights
+# but are loaded independently, so they can be placed on different GPUs.
+device_maps:
+  actor: "cuda:3"        # actor + value head (trainable)
+  ref_model: "cuda:3"    # frozen reference model
+
+# Reward model
+reward_model:
+  name: "internlm/internlm2-7b-reward"
+  path: "models/internlm2-7b-reward"
+  device: "cuda:2"
+  dtype: "bfloat16"
+  prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n{response}<|im_end|>"
+
+# Dataset
+dataset:
+  name: "m-a-p/COIG-CQIA"
+  train_path: "data/coig-cqia/processed/train.jsonl"
+  prompt_template: "User: {prompt}\nAssistant:"
+
+# PPO hyperparameters
+ppo:
+  learning_rate: 1.41e-5
+  batch_size: 8
+  mini_batch_size: 2
+  ppo_epochs: 4
+  gamma: 0.99
+  lam: 0.95
+  clip_range: 0.2
+  vf_coef: 0.1
+  target_kl: 0.1
+  kl_penalty: "kl"           # "kl" | "abs" | "mse" | "full"
+  max_grad_norm: 1.0
+
+# Generation
+generation:
+  max_new_tokens: 512
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+
+# LoRA
+lora:
+  enable: true
+  r: 8
+  lora_alpha: 32
+  lora_dropout: 0.05
+  target_modules:
+    - "q_proj"
+    - "v_proj"
+    - "k_proj"
+    - "o_proj"
+    - "gate_proj"
+    - "up_proj"
+    - "down_proj"
+
+# Output
+output_dir: "outputs/trl_ppo"
+save_freq: 10
+log_freq: 1
+num_train_epochs: 1
