@@ -10,7 +10,7 @@ dtype: "bfloat16"
 # or a layer-level dict like {"": "cuda:0", "lm_head": "cuda:1"}.
 device_maps:
   actor_critic: "cuda:3"
-  reference_model: "cuda:2"
+  reference_model: "cuda:3"
 
 max_seq_len: 1024
 max_new_tokens: 512
