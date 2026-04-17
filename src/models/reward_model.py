@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModel, AutoTokenizer, AutoConfig
 from contextlib import contextmanager
 
 
@@ -10,19 +10,20 @@ class RewardModel(nn.Module):
         self.reward_config = reward_config
         self.prompt_template = reward_config["prompt_template"]
         
-        self.model = AutoModelForSequenceClassification.from_pretrained(
+        self.model = AutoModel.from_pretrained(
             reward_config["path"],
             torch_dtype=getattr(torch, reward_config["dtype"]),
             device_map="auto",
-            num_labels=1,
-            trust_remote_code=True
+            trust_remote_code=True,
+            local_files_only=True
         )
         
         self.tokenizer = AutoTokenizer.from_pretrained(
             reward_config["path"],
             padding_side="right",
             truncation_side="right",
-            trust_remote_code=True
+            trust_remote_code=True,
+            local_files_only=True
         )
         
         if self.tokenizer.pad_token is None:
