@@ -12,8 +12,7 @@ class ActorCritic(nn.Module):
         self.model = AutoModelForCausalLM.from_pretrained(
             model_config["model_path"],
             torch_dtype=getattr(torch, model_config["dtype"]),
-            device_map="auto",
-            use_flash_attention_2=model_config.get("use_flash_attention", False)
+            device_map="auto"
         )
         
         self.tokenizer = AutoTokenizer.from_pretrained(

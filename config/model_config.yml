@@ -12,7 +12,6 @@ temperature: 0.7
 top_p: 0.9
 top_k: 50
 
-use_flash_attention: true
 use_gradient_checkpointing: true
 
 datasets:
