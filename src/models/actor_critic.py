@@ -17,7 +17,7 @@ class ActorCritic(nn.Module):
         
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_config["tokenizer_path"],
-            padding_side="right",
+            padding_side="left",
             truncation_side="right"
         )
         
@@ -26,7 +26,7 @@ class ActorCritic(nn.Module):
         
         self.hidden_size = self.model.config.hidden_size
         self.value_head = nn.Linear(self.hidden_size, 1, dtype=self.model.dtype)
-        
+
         if model_config["lora"]["enable"]:
             lora_config = LoraConfig(
                 r=model_config["lora"]["r"],
@@ -37,9 +37,13 @@ class ActorCritic(nn.Module):
                 task_type="CAUSAL_LM"
             )
             self.model = get_peft_model(self.model, lora_config)
-        
+
         if model_config.get("use_gradient_checkpointing", False):
             self.model.gradient_checkpointing_enable()
+
+        # Move value_head to the same device as the model's first parameter
+        model_device = next(self.model.parameters()).device
+        self.value_head = self.value_head.to(model_device)
     
     def forward(self, input_ids, attention_mask=None, return_dict=True):
         outputs = self.model(
@@ -51,8 +55,8 @@ class ActorCritic(nn.Module):
         
         logits = outputs.logits
         last_hidden_state = outputs.hidden_states[-1]
-        
-        values = self.value_head(last_hidden_state).squeeze(-1)
+
+        values = self.value_head(last_hidden_state.to(self.value_head.weight.device)).squeeze(-1)
         
         return {
             "logits": logits,
