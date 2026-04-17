@@ -21,7 +21,7 @@ max_grad_norm: 1.0
 reward_model:
   name: "internlm/internlm2-7b-reward"
   path: "models/internlm2-7b-reward"
-  device: "cuda"
+  device_map: "cuda:2"
   dtype: "bfloat16"
   prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n{response}<|im_end|>"
 

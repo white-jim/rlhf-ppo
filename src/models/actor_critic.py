@@ -9,10 +9,11 @@ class ActorCritic(nn.Module):
         super().__init__()
         self.model_config = model_config
         
+        _device_map = model_config.get("device_maps", {}).get("actor_critic", "auto")
         self.model = AutoModelForCausalLM.from_pretrained(
             model_config["model_path"],
             torch_dtype=getattr(torch, model_config["dtype"]),
-            device_map="auto",
+            device_map=_device_map,
             local_files_only=True,
         )
 

@@ -48,11 +48,12 @@ class RewardModel(nn.Module):
         if hasattr(config, "attn_implementation"):
             config.attn_implementation = "eager"
 
+        _device_map = reward_config.get("device_map", "auto")
         self.model = AutoModel.from_pretrained(
             reward_config["path"],
             config=config,
             torch_dtype=getattr(torch, reward_config["dtype"]),
-            device_map="auto",
+            device_map=_device_map,
             trust_remote_code=True,
             local_files_only=True
         )
