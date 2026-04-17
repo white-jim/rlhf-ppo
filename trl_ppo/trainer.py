@@ -11,7 +11,10 @@ from typing import List
 from transformers import AutoTokenizer, AutoModelForCausalLM, AutoModel, AutoConfig
 from peft import LoraConfig, get_peft_model
 from trl.experimental.ppo import PPOTrainer, PPOConfig
-from trl.models import AutoModelForCausalLMWithValueHead
+try:
+    from trl.models import AutoModelForCausalLMWithValueHead
+except ImportError:
+    from trl import AutoModelForCausalLMWithValueHead
 
 
 def load_config(path: str) -> dict:
