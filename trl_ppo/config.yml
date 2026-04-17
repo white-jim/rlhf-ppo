@@ -6,23 +6,20 @@ dtype: "bfloat16"
 
 # 物理GPU编号，逗号分隔。程序启动时会在 import torch 之前设置 CUDA_VISIBLE_DEVICES，
 # 之后内部编号从 cuda:0 重新开始。留空或删除此行则不做限制。
-visible_gpus: "2,3"
+visible_gpus: "3"
 
 # Device map for each model component.
-# 注意：这里的编号是 CUDA_VISIBLE_DEVICES 重映射后的编号。
-# 例如启动时 --gpus 2,3，则 cuda:0 → 物理卡2，cuda:1 → 物理卡3。
-# TRL/Accelerator 会接管 policy+value_model，建议都设 "auto" 让其自动分配；
-# reward_model 不受 Accelerator 管理，可以单独指定到另一张卡。
+# 只用一张卡时所有模型都在 cuda:0。
 device_maps:
-  actor: "auto"          # policy model（Accelerator 会接管，设 auto 即可）
-  ref_model: "auto"      # 仅 LoRA 禁用时使用
-  value_model: "auto"    # value model（Accelerator 会接管）
+  actor: "auto"
+  ref_model: "auto"
+  value_model: "auto"
 
 # Reward model
 reward_model:
   name: "internlm/internlm2-7b-reward"
   path: "models/internlm2-7b-reward"
-  device: "cuda:1"       # 重映射后的编号，如 --gpus 2,3 则 cuda:1 = 物理卡3
+  device: "cuda:0"
   dtype: "bfloat16"
   prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n{response}<|im_end|>"
 
