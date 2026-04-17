@@ -10,7 +10,7 @@ dtype: "bfloat16"
 # but are loaded independently, so they can be placed on different GPUs.
 device_maps:
   actor: "cuda:3"        # actor + value head (trainable)
-  ref_model: "cuda:3"    # frozen reference model
+  ref_model: "cuda:2"    # frozen reference model
 
 # Reward model
 reward_model:
