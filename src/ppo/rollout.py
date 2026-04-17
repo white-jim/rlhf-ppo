@@ -152,12 +152,16 @@ class RolloutCollector:
         action_log_probs, values, loss_mask = self.compute_log_probs_and_values(
             full_input_ids, prompt_lengths
         )
-        
+        action_log_probs = action_log_probs.detach()
+        values = values.detach()
+
         ref_log_probs = self.compute_ref_log_probs(full_input_ids, prompt_lengths)
         
         rewards, kl_divergences = self.compute_rewards(
             prompts, responses, action_log_probs, ref_log_probs, prompt_lengths, kl_coef
         )
+        rewards = rewards.detach()
+        ref_log_probs = ref_log_probs.detach()
         
         attention_mask = torch.ones_like(full_input_ids)
         
