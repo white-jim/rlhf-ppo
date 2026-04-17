@@ -37,6 +37,8 @@ venv.bak/
 .claude/
 .trae/
 .idea/
+.claude/
+.trae/
 .cursor/
 .codex/
 .windsurf/
