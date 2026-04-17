@@ -3,6 +3,7 @@ import argparse
 import sys
 
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"  # 只使用第0和第1张GPU
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
