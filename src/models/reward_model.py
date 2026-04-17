@@ -57,13 +57,27 @@ class RewardModel(nn.Module):
             local_files_only=True
         )
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            reward_config["path"],
-            padding_side="right",
-            truncation_side="right",
-            trust_remote_code=True,
-            local_files_only=True
-        )
+        # Try loading tokenizer with use_fast=False first to avoid tiktoken/sentencepiece dependency
+        # If that fails, try with use_fast=True (may require additional packages)
+        try:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                reward_config["path"],
+                padding_side="right",
+                truncation_side="right",
+                trust_remote_code=True,
+                local_files_only=True,
+                use_fast=False  # Use slow tokenizer to avoid conversion issues
+            )
+        except Exception as e:
+            print(f"Warning: Failed to load slow tokenizer: {e}")
+            print("Trying fast tokenizer (may require tiktoken/sentencepiece)...")
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                reward_config["path"],
+                padding_side="right",
+                truncation_side="right",
+                trust_remote_code=True,
+                local_files_only=True
+            )
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
