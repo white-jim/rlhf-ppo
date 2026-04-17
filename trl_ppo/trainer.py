@@ -29,6 +29,42 @@ def load_config(path: str) -> dict:
 #   reward_logits = model.score(output.hidden_states[-1])
 # ---------------------------------------------------------------------------
 
+class _DeviceMovingBackbone(nn.Module):
+    """Moves inputs to the backbone's device, runs forward, moves hidden_states back to the caller's device.
+
+    This lets the reward model live on a different GPU from the policy while still satisfying
+    TRL's get_reward() which indexes reward_logits with sequence_lengths — both must be on the
+    same device, and sequence_lengths is always on the Accelerator's device (cuda:0).
+    """
+
+    def __init__(self, backbone: nn.Module):
+        super().__init__()
+        self._backbone = backbone
+
+    def forward(self, input_ids=None, attention_mask=None, position_ids=None, **kwargs):
+        model_device = next(self._backbone.parameters()).device
+        src_device = input_ids.device if input_ids is not None else model_device
+
+        if input_ids is not None:
+            input_ids = input_ids.to(model_device)
+        if attention_mask is not None:
+            attention_mask = attention_mask.to(model_device)
+        if position_ids is not None:
+            position_ids = position_ids.to(model_device)
+
+        output = self._backbone(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            position_ids=position_ids,
+            **kwargs,
+        )
+
+        if hasattr(output, "hidden_states") and output.hidden_states is not None:
+            output.hidden_states = tuple(h.to(src_device) for h in output.hidden_states)
+
+        return output
+
+
 class InternLM2RewardWrapper(nn.Module):
     base_model_prefix = "model"
 
@@ -51,7 +87,7 @@ class InternLM2RewardWrapper(nn.Module):
         if hasattr(config, "attn_implementation"):
             config.attn_implementation = "eager"
 
-        self.model = AutoModel.from_pretrained(
+        _backbone = AutoModel.from_pretrained(
             reward_cfg["path"],
             config=config,
             torch_dtype=dtype,
@@ -59,26 +95,30 @@ class InternLM2RewardWrapper(nn.Module):
             trust_remote_code=True,
             local_files_only=True,
         )
-        self.model.eval()
-        self.model.requires_grad_(False)
+        _backbone.eval()
+        _backbone.requires_grad_(False)
 
         # Build score head; try to copy weights from the original reward head
         hidden_size = config.hidden_size
         self._score = nn.Linear(hidden_size, 1, dtype=dtype, bias=False)
         for attr in ("reward_head", "score", "value_head", "classifier"):
-            head = getattr(self.model, attr, None)
+            head = getattr(_backbone, attr, None)
             if head is not None and hasattr(head, "weight"):
                 self._score.weight.data.copy_(head.weight.data)
                 break
-        rm_device = next(self.model.parameters()).device
+        rm_device = next(_backbone.parameters()).device
         self._score = self._score.to(rm_device)
         self._score.eval()
         self._score.requires_grad_(False)
 
+        self.model = _DeviceMovingBackbone(_backbone)
         self.config = config
 
     def score(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        return self._score(hidden_states)
+        # hidden_states arrive on the caller's device (cuda:0); move to score head device for compute
+        rm_device = next(self._score.parameters()).device
+        src_device = hidden_states.device
+        return self._score(hidden_states.to(rm_device)).to(src_device)
 
     def forward(self, input_ids=None, attention_mask=None, **kwargs):
         return self.model(
