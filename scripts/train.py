@@ -4,7 +4,7 @@ import sys
 
 os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(__file__)), "src"))
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 
 from src.ppo import PPOTrainer
 
