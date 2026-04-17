@@ -33,8 +33,16 @@ class RewardModel(nn.Module):
                 factor = rope_scaling.get("scaling_factor") or rope_scaling.get("rope_scaling_factor") or 1.0
                 rope_scaling["factor"] = factor
 
-            # Update config
-            config.rope_scaling = rope_scaling
+            # InternLM2 doesn't recognize "default" as a valid scaling type
+            # Valid types are typically: "linear", "dynamic", "ntk-aware", "ntk_alpha", etc.
+            # If type is "default" or unknown, disable rope_scaling
+            scaling_type = rope_scaling.get("type", "")
+            valid_scaling_types = ["linear", "dynamic", "ntk-aware", "ntk_alpha", "yarn", "longrope"]
+            if scaling_type.lower() not in valid_scaling_types:
+                # Disable rope_scaling - model will use default (no scaling) behavior
+                config.rope_scaling = None
+            else:
+                config.rope_scaling = rope_scaling
 
         # Force eager attention implementation to avoid flash attention issues
         if hasattr(config, "attn_implementation"):
