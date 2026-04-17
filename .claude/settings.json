@@ -3,7 +3,9 @@
     "allow": [
       "Bash(python -c \"import transformers; print\\(transformers.__version__\\)\")",
       "WebSearch",
-      "WebFetch(domain:markaicode.com)"
+      "WebFetch(domain:markaicode.com)",
+      "Read(//d/works/RL-showout/trl/trl/**)",
+      "Read(//d/works/RL-showout/trl/**)"
     ]
   }
 }

@@ -30,15 +30,17 @@ dataset:
 ppo:
   learning_rate: 1.41e-5
   batch_size: 8
-  mini_batch_size: 2
+  num_mini_batches: 4        # how many mini-batches to split each batch into
   ppo_epochs: 4
   gamma: 0.99
   lam: 0.95
   clip_range: 0.2
   vf_coef: 0.1
-  target_kl: 0.1
-  kl_penalty: "kl"           # "kl" | "abs" | "mse" | "full"
+  kl_coef: 0.05              # initial KL penalty coefficient
   max_grad_norm: 1.0
+
+max_prompt_length: 512
+use_gradient_checkpointing: true
 
 # Generation
 generation:
