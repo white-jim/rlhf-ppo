@@ -57,27 +57,32 @@ class RewardModel(nn.Module):
             local_files_only=True
         )
 
-        # Try loading tokenizer with use_fast=False first to avoid tiktoken/sentencepiece dependency
-        # If that fails, try with use_fast=True (may require additional packages)
+        # Try fast tokenizer first: if tokenizer.json exists, no protobuf/sentencepiece needed.
+        # Fall back to slow tokenizer (requires protobuf+sentencepiece).
+        _tok_kwargs = dict(
+            padding_side="right",
+            truncation_side="right",
+            trust_remote_code=True,
+            local_files_only=True,
+        )
         try:
             self.tokenizer = AutoTokenizer.from_pretrained(
-                reward_config["path"],
-                padding_side="right",
-                truncation_side="right",
-                trust_remote_code=True,
-                local_files_only=True,
-                use_fast=False  # Use slow tokenizer to avoid conversion issues
+                reward_config["path"], use_fast=True, **_tok_kwargs
             )
-        except Exception as e:
-            print(f"Warning: Failed to load slow tokenizer: {e}")
-            print("Trying fast tokenizer (may require tiktoken/sentencepiece)...")
-            self.tokenizer = AutoTokenizer.from_pretrained(
-                reward_config["path"],
-                padding_side="right",
-                truncation_side="right",
-                trust_remote_code=True,
-                local_files_only=True
-            )
+        except Exception as e_fast:
+            print(f"Warning: Fast tokenizer failed ({e_fast}), trying slow tokenizer...")
+            print("If this also fails, run: pip install protobuf sentencepiece")
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(
+                    reward_config["path"], use_fast=False, **_tok_kwargs
+                )
+            except Exception as e_slow:
+                raise RuntimeError(
+                    f"Cannot load tokenizer for {reward_config['path']}.\n"
+                    f"Fix: pip install protobuf sentencepiece\n"
+                    f"Fast error: {e_fast}\n"
+                    f"Slow error: {e_slow}"
+                ) from e_slow
 
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -116,21 +121,28 @@ class RewardModel(nn.Module):
     def _get_device(self):
         """Get the device where the model resides."""
         try:
-            # For models with device_map="auto", get the first device
             if hasattr(self.model, "hf_device_map"):
                 devices = list(self.model.hf_device_map.values())
                 if devices:
-                    return torch.device(devices[0])
-            # Fallback: get device from first parameter
+                    d = devices[0]
+                    # device_map values can be int (cuda index) or str ("cuda:0", "cpu")
+                    if isinstance(d, int):
+                        return torch.device("cuda", d)
+                    return torch.device(d)
             return next(self.model.parameters()).device
-        except (StopIteration, Exception):
+        except Exception:
             return torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     @contextmanager
     def inference_mode(self):
         with torch.inference_mode():
-            with torch.cuda.amp.autocast(dtype=self.model.dtype):
-                yield
+            # autocast dtype kwarg requires PyTorch >= 1.10; fall back gracefully
+            try:
+                with torch.cuda.amp.autocast(dtype=self.model.dtype):
+                    yield
+            except TypeError:
+                with torch.cuda.amp.autocast():
+                    yield
 
     def format_input(self, prompt, response):
         return self.prompt_template.format(prompt=prompt, response=response)
