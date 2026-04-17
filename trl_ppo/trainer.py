@@ -47,6 +47,10 @@ class _DeviceMovingBackbone(nn.Module):
 
         if input_ids is not None:
             input_ids = input_ids.to(model_device)
+            # Policy vocab (Qwen2.5: 152064) may exceed reward model vocab (InternLM2: 92544).
+            # Clamp OOV token IDs to avoid embedding lookup assertion failures.
+            vocab_size = self._backbone.config.vocab_size
+            input_ids = input_ids.clamp(0, vocab_size - 1)
         if attention_mask is not None:
             attention_mask = attention_mask.to(model_device)
         if position_ids is not None:
