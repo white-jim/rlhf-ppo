@@ -13,7 +13,7 @@ from transformers import (
     AutoModel,
     AutoConfig,
 )
-from peft import LoraConfig
+from peft import LoraConfig, get_peft_model
 from trl.experimental.ppo import PPOConfig, PPOTrainer
 
 
@@ -248,6 +248,20 @@ class TRLPPOTrainer:
             local_files_only=True,
         )
 
+        # Apply LoRA to value model backbone to drastically reduce optimizer memory
+        if cfg["lora"]["enable"]:
+            value_lora_cfg = LoraConfig(
+                r=cfg["lora"]["r"],
+                lora_alpha=cfg["lora"]["lora_alpha"],
+                target_modules=cfg["lora"]["target_modules"],
+                lora_dropout=cfg["lora"]["lora_dropout"],
+                bias="none",
+            )
+            value_model.model = get_peft_model(value_model.model, value_lora_cfg)
+            v_trainable = sum(p.numel() for p in value_model.parameters() if p.requires_grad)
+            v_total = sum(p.numel() for p in value_model.parameters())
+            print(f"Value model LoRA: {v_trainable:,} / {v_total:,} params trainable")
+
         # Reward model
         print("Loading reward model...")
         reward_model = InternLM2RewardWrapper(cfg["reward_model"], policy_tokenizer=tokenizer)
@@ -276,8 +290,9 @@ class TRLPPOTrainer:
             stop_token="eos",
             num_train_epochs=cfg.get("num_train_epochs", 1),
             save_steps=cfg.get("save_freq", 10),
+            save_total_limit=cfg.get("save_total_limit", None),
             logging_steps=cfg.get("log_freq", 1),
-            bf16=(cfg["dtype"] == "bfloat16"),
+            bf16=False,  # model already loaded in bf16, skip AMP to bypass NVML check
             gradient_checkpointing=cfg.get("use_gradient_checkpointing", True),
             sft_model_path=cfg["model_path"],
             reward_model_path=cfg["reward_model"]["path"],
