@@ -102,7 +102,6 @@ def build_verl_args(cfg: dict, config_path: str) -> list[str]:
         "algorithm.kl_ctrl.type=fixed",
         # reward: custom function (InternLM2)
         "reward.num_workers=1",
-        "reward.num_gpus_per_worker=1",
         f"reward.custom_reward_function.path={reward_fn_path}",
         "reward.custom_reward_function.name=compute_score",
         # trainer

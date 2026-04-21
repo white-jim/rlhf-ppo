@@ -27,7 +27,8 @@ def _load_reward_model():
 
     model_path = os.getenv("REWARD_MODEL_PATH", "models/internlm2-7b-reward")
     dtype = getattr(torch, os.getenv("REWARD_MODEL_DTYPE", "bfloat16"))
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+    # Force cuda:0 since CUDA_VISIBLE_DEVICES already restricts GPU visibility
+    device = "cuda:0"
 
     print(f"[reward_fn] Loading InternLM2 reward model from {model_path} (dtype={dtype}, device={device})")
 
