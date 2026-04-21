@@ -13,6 +13,7 @@ GPU 分配在 verl_ppo/config.yml 的 visible_gpus 字段中配置。
 """
 
 import argparse
+import datetime
 import os
 import subprocess
 import sys
@@ -155,11 +156,39 @@ def main():
     verl_args = build_verl_args(cfg, args.config)
 
     cmd = [sys.executable, "-m", "verl.trainer.main_ppo"] + verl_args
+
+    log_dir = os.path.join(cfg.get("output_dir", "outputs/verl_ppo"), "logs")
+    os.makedirs(log_dir, exist_ok=True)
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_path = os.path.join(log_dir, f"train_{timestamp}.log")
+
     print("[quick_start_verl] Launching verl PPO trainer...")
+    print(f"[quick_start_verl] Log file: {log_path}")
     print("Command:", " ".join(cmd))
 
-    result = subprocess.run(cmd, env=env)
-    sys.exit(result.returncode)
+    returncode = _run_tee(cmd, env, log_path)
+    sys.exit(returncode)
+
+
+def _run_tee(cmd: list, env: dict, log_path: str) -> int:
+    """Run cmd, writing output to both terminal and log_path in real time."""
+    with open(log_path, "w", encoding="utf-8", errors="replace") as log_file:
+        process = subprocess.Popen(
+            cmd,
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+        )
+        for line in process.stdout:
+            print(line, end="", flush=True)
+            log_file.write(line)
+            log_file.flush()
+        process.wait()
+    return process.returncode
 
 
 if __name__ == "__main__":
