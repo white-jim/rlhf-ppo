@@ -11,6 +11,11 @@ verl 的 reward manager 会调用 compute_score(data_source, solution_str, groun
 """
 
 import os
+
+# Debug: print environment variables before importing torch
+print(f"[reward_fn] PID={os.getpid()}, CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'NOT SET')}")
+print(f"[reward_fn] All CUDA-related env vars: {[(k, v) for k, v in os.environ.items() if 'CUDA' in k or 'GPU' in k]}")
+
 import torch
 from transformers import AutoModel, AutoTokenizer, AutoConfig
 
