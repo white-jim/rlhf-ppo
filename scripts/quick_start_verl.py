@@ -119,7 +119,7 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "trainer.project_name=rlhf_ppo",
         "trainer.experiment_name=verl_ppo",
         # Ray runtime env - pass CUDA_VISIBLE_DEVICES to workers
-        f"+ray_kwargs.ray_init.runtime_env.env_vars.CUDA_VISIBLE_DEVICES={visible_gpus}",
+        f"+ray_kwargs.ray_init.runtime_env.env_vars.CUDA_VISIBLE_DEVICES='{visible_gpus}'",
     ]
     return args
 
