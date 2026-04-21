@@ -103,10 +103,17 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "algorithm.use_kl_in_reward=True",
         f"algorithm.kl_ctrl.kl_coef={ppo['kl_coef']}",
         "algorithm.kl_ctrl.type=fixed",
-        # reward: custom function (InternLM2)
+        # reward: vLLM reward model (InternLM2-7B-reward)
         "reward.num_workers=1",
-        f"reward.custom_reward_function.path={reward_fn_path}",
-        "reward.custom_reward_function.name=compute_score",
+        "reward.reward_model.enable=True",
+        "reward.reward_model.enable_resource_pool=False",
+        f"reward.reward_model.model_path={rm['path']}",
+        "actor_rollout_ref.model.trust_remote_code=True",
+        "critic.model.trust_remote_code=True",
+        "reward.reward_model.rollout.name=vllm",
+        "reward.reward_model.rollout.gpu_memory_utilization=0.5",
+        "reward.reward_model.rollout.tensor_model_parallel_size=1",
+        "reward.reward_model.rollout.free_cache_engine=True",
         # trainer
         "trainer.n_gpus_per_node=1",
         "trainer.nnodes=1",
