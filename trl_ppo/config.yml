@@ -6,7 +6,7 @@ dtype: "bfloat16"
 
 # 物理GPU编号，逗号分隔。程序启动时会在 import torch 之前设置 CUDA_VISIBLE_DEVICES，
 # 之后内部编号从 cuda:0 重新开始。留空或删除此行则不做限制。
-visible_gpus: "2"
+visible_gpus: "1"
 
 # Device map for each model component.
 # 只用一张卡时所有模型都在 cuda:0。
