@@ -42,20 +42,26 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
     if visible_gpus is None:
         visible_gpus = cfg.get("visible_gpus", "0")
 
-    model_path = cfg["model_path"]
-    parquet_dir = dataset["parquet_dir"]
+    # 获取项目根目录的绝对路径
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    # 转换相对路径为绝对路径
+    def to_abs_path(path):
+        if os.path.isabs(path):
+            return path
+        return os.path.join(project_root, path)
+
+    model_path = to_abs_path(cfg["model_path"])
+    rm_path = to_abs_path(rm["path"])
+    parquet_dir = to_abs_path(dataset["parquet_dir"])
     train_parquet = os.path.join(parquet_dir, "train.parquet")
     val_parquet = os.path.join(parquet_dir, "val.parquet")
+    output_dir = to_abs_path(cfg["output_dir"])
 
     # ppo_mini_batch_size = batch_size // num_mini_batches
     mini_batch_size = ppo["batch_size"] // ppo.get("num_mini_batches", 1)
     # micro batch size: 单卡内存有限，设为 1
     micro_batch = 1
-
-    # reward_fn 绝对路径
-    reward_fn_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "verl_ppo", "reward_fn.py"
-    )
 
     # LoRA target_modules: verl 接受逗号分隔字符串或列表
     lora_targets = ",".join(lora["target_modules"]) if lora["enable"] else ""
@@ -107,7 +113,7 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "reward.num_workers=1",
         "reward.reward_model.enable=True",
         "reward.reward_model.enable_resource_pool=False",
-        f"reward.reward_model.model_path={rm['path']}",
+        f"reward.reward_model.model_path={rm_path}",
         "reward.reward_model.rollout.name=vllm",
         "reward.reward_model.rollout.gpu_memory_utilization=0.5",
         "reward.reward_model.rollout.tensor_model_parallel_size=1",
@@ -122,11 +128,13 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "trainer.test_freq=-1",
         "trainer.val_before_train=False",
         "trainer.logger=console",
-        f"trainer.default_local_dir={cfg['output_dir']}",
+        f"trainer.default_local_dir={output_dir}",
         "trainer.project_name=rlhf_ppo",
         "trainer.experiment_name=verl_ppo",
-        # Ray runtime env - pass CUDA_VISIBLE_DEVICES to workers
+        # Ray runtime env - pass CUDA_VISIBLE_DEVICES and HF cache to workers
         f"+ray_kwargs.ray_init.runtime_env.env_vars.CUDA_VISIBLE_DEVICES='{visible_gpus}'",
+        "+ray_kwargs.ray_init.runtime_env.env_vars.HF_MODULES_CACHE='/tmp/hf_modules_cache'",
+        "+ray_kwargs.ray_init.runtime_env.env_vars.TRANSFORMERS_CACHE='/tmp/hf_cache'",
     ]
     return args
 
@@ -146,9 +154,20 @@ def main():
         env["CUDA_VISIBLE_DEVICES"] = str(visible_gpus)
         print(f"[quick_start_verl] CUDA_VISIBLE_DEVICES={visible_gpus}")
 
+    # 获取项目根目录
+    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+    # 转换相对路径为绝对路径
+    def to_abs_path(path):
+        if os.path.isabs(path):
+            return path
+        return os.path.join(project_root, path)
+
     env["HF_ENDPOINT"] = "https://hf-mirror.com"
+    env["HF_MODULES_CACHE"] = "/tmp/hf_modules_cache"
+    env["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
     # reward_fn.py 需要知道 reward model 路径
-    env["REWARD_MODEL_PATH"] = cfg["reward_model"]["path"]
+    env["REWARD_MODEL_PATH"] = to_abs_path(cfg["reward_model"]["path"])
     env["REWARD_MODEL_DTYPE"] = cfg["reward_model"].get("dtype", "bfloat16")
     env["REWARD_PROMPT_TEMPLATE"] = cfg["reward_model"].get(
         "prompt_template",
@@ -160,7 +179,7 @@ def main():
         return
 
     # 检查 parquet 是否存在，不存在则自动准备
-    parquet_dir = cfg["dataset"]["parquet_dir"]
+    parquet_dir = to_abs_path(cfg["dataset"]["parquet_dir"])
     train_parquet = os.path.join(parquet_dir, "train.parquet")
     if not os.path.exists(train_parquet):
         print("[quick_start_verl] Parquet not found, running data preparation...")
@@ -170,7 +189,8 @@ def main():
 
     cmd = [sys.executable, "-m", "verl.trainer.main_ppo"] + verl_args
 
-    log_dir = os.path.join(cfg.get("output_dir", "outputs/verl_ppo"), "logs")
+    output_dir = to_abs_path(cfg.get("output_dir", "outputs/verl_ppo"))
+    log_dir = os.path.join(output_dir, "logs")
     os.makedirs(log_dir, exist_ok=True)
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
     log_path = os.path.join(log_dir, f"train_{timestamp}.log")
