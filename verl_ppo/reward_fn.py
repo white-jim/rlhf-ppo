@@ -48,10 +48,11 @@ def _load_reward_model():
         model_path,
         config=config,
         torch_dtype=dtype,
-        device_map=device,
         trust_remote_code=True,
         local_files_only=True,
+        low_cpu_mem_usage=False,
     )
+    model = model.to(device)
     model.eval()
     model.requires_grad_(False)
 

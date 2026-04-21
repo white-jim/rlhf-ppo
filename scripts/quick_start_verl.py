@@ -82,7 +82,8 @@ def build_verl_args(cfg: dict, config_path: str) -> list[str]:
         # rollout (vllm)
         "actor_rollout_ref.rollout.name=vllm",
         "actor_rollout_ref.rollout.tensor_model_parallel_size=1",
-        "actor_rollout_ref.rollout.gpu_memory_utilization=0.5",
+        "actor_rollout_ref.rollout.gpu_memory_utilization=0.4",
+        "actor_rollout_ref.rollout.free_cache_engine=True",
         f"actor_rollout_ref.rollout.temperature={gen['temperature']}",
         f"actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu={micro_batch}",
         # ref (fused into actor via LoRA)
@@ -101,6 +102,7 @@ def build_verl_args(cfg: dict, config_path: str) -> list[str]:
         "algorithm.kl_ctrl.type=fixed",
         # reward: custom function (InternLM2)
         "reward.num_workers=1",
+        "reward.num_gpus_per_worker=1",
         f"reward.custom_reward_function.path={reward_fn_path}",
         "reward.custom_reward_function.name=compute_score",
         # trainer
