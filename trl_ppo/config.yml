@@ -1,12 +1,12 @@
 # Model
-model_name: "Qwen/Qwen2.5-7B-Instruct"
-model_path: "models/qwen2.5-7b-instruct"
-tokenizer_path: "models/qwen2.5-7b-instruct"
+model_name: "Qwen/Qwen2.5-3B-Instruct"
+model_path: "models/qwen2.5-3b-instruct"
+tokenizer_path: "models/qwen2.5-3b-instruct"
 dtype: "bfloat16"
 
 # 物理GPU编号，逗号分隔。程序启动时会在 import torch 之前设置 CUDA_VISIBLE_DEVICES，
 # 之后内部编号从 cuda:0 重新开始。留空或删除此行则不做限制。
-visible_gpus: "3"
+visible_gpus: "2"
 
 # Device map for each model component.
 # 只用一张卡时所有模型都在 cuda:0。
@@ -19,7 +19,7 @@ device_maps:
 reward_model:
   name: "internlm/internlm2-7b-reward"
   path: "models/internlm2-7b-reward"
-  device: "cuda:0"
+  device: "auto"
   dtype: "bfloat16"
   prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n{response}<|im_end|>"
 
@@ -27,28 +27,28 @@ reward_model:
 dataset:
   name: "m-a-p/COIG-CQIA"
   train_path: "data/coig-cqia/processed/train.jsonl"
-  prompt_template: "User: {prompt}\nAssistant:"
+  prompt_template: "<|im_start|>user\n{prompt}<|im_end|>\n<|im_start|>assistant\n"
 
 # PPO hyperparameters
 ppo:
-  learning_rate: 1.41e-5
-  batch_size: 2
-  num_mini_batches: 1        # batch_size=2 时不宜再拆分
+  learning_rate: 5e-6
+  batch_size: 8
+  num_mini_batches: 2        # batch_size=2 时不宜再拆分
   local_rollout_forward_batch_size: 2   # 默认64，单卡7B必须调小
   ppo_epochs: 4
   gamma: 0.99
   lam: 0.95
   clip_range: 0.2
   vf_coef: 0.1
-  kl_coef: 0.05              # initial KL penalty coefficient
+  kl_coef: 0.15              # 增大 KL 惩罚，防止策略偏离 reference 过远
   max_grad_norm: 1.0
 
-max_prompt_length: 256
+max_prompt_length: 512
 use_gradient_checkpointing: true
 
 # Generation
 generation:
-  max_new_tokens: 256
+  max_new_tokens: 512
   temperature: 0.7
   top_p: 0.9
   top_k: 50
@@ -70,6 +70,7 @@ lora:
 
 # Output
 output_dir: "outputs/trl_ppo"
-save_freq: 10
+save_freq: 200
+save_total_limit: 1
 log_freq: 1
 num_train_epochs: 1
