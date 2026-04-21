@@ -31,7 +31,7 @@ def prepare_data(config_path: str):
     subprocess.run([sys.executable, script, "--config", config_path], check=True)
 
 
-def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> list[str]:
+def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None, cache_dir: str = None) -> list[str]:
     """根据 config.yml 构建 verl CLI 参数列表。"""
     ppo = cfg["ppo"]
     gen = cfg["generation"]
@@ -57,6 +57,12 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
     train_parquet = os.path.join(parquet_dir, "train.parquet")
     val_parquet = os.path.join(parquet_dir, "val.parquet")
     output_dir = to_abs_path(cfg["output_dir"])
+
+    # HuggingFace cache directories
+    if cache_dir is None:
+        cache_dir = os.path.join(project_root, ".cache", "huggingface")
+    hf_modules_cache = os.path.join(cache_dir, "modules")
+    transformers_cache = os.path.join(cache_dir, "transformers")
 
     # ppo_mini_batch_size = batch_size // num_mini_batches
     mini_batch_size = ppo["batch_size"] // ppo.get("num_mini_batches", 1)
@@ -133,8 +139,10 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "trainer.experiment_name=verl_ppo",
         # Ray runtime env - pass CUDA_VISIBLE_DEVICES and HF cache to workers
         f"+ray_kwargs.ray_init.runtime_env.env_vars.CUDA_VISIBLE_DEVICES='{visible_gpus}'",
-        "+ray_kwargs.ray_init.runtime_env.env_vars.HF_MODULES_CACHE='/tmp/hf_modules_cache'",
-        "+ray_kwargs.ray_init.runtime_env.env_vars.TRANSFORMERS_CACHE='/tmp/hf_cache'",
+        f"+ray_kwargs.ray_init.runtime_env.env_vars.HF_HOME='{cache_dir}'",
+        f"+ray_kwargs.ray_init.runtime_env.env_vars.HF_MODULES_CACHE='{hf_modules_cache}'",
+        f"+ray_kwargs.ray_init.runtime_env.env_vars.TRANSFORMERS_CACHE='{transformers_cache}'",
+        f"+ray_kwargs.ray_init.runtime_env.env_vars.PYTHONPATH='{hf_modules_cache}'",
     ]
     return args
 
@@ -164,8 +172,12 @@ def main():
         return os.path.join(project_root, path)
 
     env["HF_ENDPOINT"] = "https://hf-mirror.com"
-    env["HF_MODULES_CACHE"] = "/tmp/hf_modules_cache"
-    env["TRANSFORMERS_CACHE"] = "/tmp/hf_cache"
+    # 使用项目目录下的 .cache 作为共享缓存
+    cache_dir = os.path.join(project_root, ".cache", "huggingface")
+    os.makedirs(cache_dir, exist_ok=True)
+    env["HF_HOME"] = cache_dir
+    env["HF_MODULES_CACHE"] = os.path.join(cache_dir, "modules")
+    env["TRANSFORMERS_CACHE"] = os.path.join(cache_dir, "transformers")
     # reward_fn.py 需要知道 reward model 路径
     env["REWARD_MODEL_PATH"] = to_abs_path(cfg["reward_model"]["path"])
     env["REWARD_MODEL_DTYPE"] = cfg["reward_model"].get("dtype", "bfloat16")
@@ -185,7 +197,7 @@ def main():
         print("[quick_start_verl] Parquet not found, running data preparation...")
         prepare_data(args.config)
 
-    verl_args = build_verl_args(cfg, args.config, visible_gpus)
+    verl_args = build_verl_args(cfg, args.config, visible_gpus, cache_dir)
 
     cmd = [sys.executable, "-m", "verl.trainer.main_ppo"] + verl_args
 
