@@ -31,13 +31,16 @@ def prepare_data(config_path: str):
     subprocess.run([sys.executable, script, "--config", config_path], check=True)
 
 
-def build_verl_args(cfg: dict, config_path: str) -> list[str]:
+def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> list[str]:
     """根据 config.yml 构建 verl CLI 参数列表。"""
     ppo = cfg["ppo"]
     gen = cfg["generation"]
     lora = cfg["lora"]
     dataset = cfg["dataset"]
     rm = cfg["reward_model"]
+
+    if visible_gpus is None:
+        visible_gpus = cfg.get("visible_gpus", "0")
 
     model_path = cfg["model_path"]
     parquet_dir = dataset["parquet_dir"]
@@ -115,6 +118,8 @@ def build_verl_args(cfg: dict, config_path: str) -> list[str]:
         f"trainer.default_local_dir={cfg['output_dir']}",
         "trainer.project_name=rlhf_ppo",
         "trainer.experiment_name=verl_ppo",
+        # Ray runtime env - pass CUDA_VISIBLE_DEVICES to workers
+        f"ray_kwargs.ray_init.runtime_env.env_vars.CUDA_VISIBLE_DEVICES={visible_gpus}",
     ]
     return args
 
@@ -154,7 +159,7 @@ def main():
         print("[quick_start_verl] Parquet not found, running data preparation...")
         prepare_data(args.config)
 
-    verl_args = build_verl_args(cfg, args.config)
+    verl_args = build_verl_args(cfg, args.config, visible_gpus)
 
     cmd = [sys.executable, "-m", "verl.trainer.main_ppo"] + verl_args
 
