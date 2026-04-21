@@ -108,7 +108,6 @@ def build_verl_args(cfg: dict, config_path: str, visible_gpus: str = None) -> li
         "reward.reward_model.enable=True",
         "reward.reward_model.enable_resource_pool=False",
         f"reward.reward_model.model_path={rm['path']}",
-        "reward.reward_model.trust_remote_code=True",
         "reward.reward_model.rollout.name=vllm",
         "reward.reward_model.rollout.gpu_memory_utilization=0.5",
         "reward.reward_model.rollout.tensor_model_parallel_size=1",
