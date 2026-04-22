@@ -55,6 +55,7 @@ python -m verl.trainer.main_ppo \
     critic.optim.lr=1e-5 \
     critic.model.enable_gradient_checkpointing=true \
     critic.fsdp.param_offload=false \
+    critic.ppo_micro_batch_size_per_gpu=2 \
     \
     reward.custom_reward_function.path=verl_new/reward_fn.py \
     reward.custom_reward_function.name=compute_score \
