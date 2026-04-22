@@ -4,6 +4,13 @@
 
 set -euo pipefail
 
+# ── 日志 ──────────────────────────────────────────────────────────────────────
+LOG_DIR="verl_new/log"
+mkdir -p "${LOG_DIR}"
+LOG_FILE="${LOG_DIR}/ppo_$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+echo "===== Run started at $(date '+%Y-%m-%d %H:%M:%S') ====="
+
 # ── 环境变量 ──────────────────────────────────────────────────────────────────
 export CUDA_VISIBLE_DEVICES=1
 export REWARD_MODEL_PATH="models/internlm2-7b-reward"
@@ -40,7 +47,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.model.lora.rank=8 \
     actor_rollout_ref.model.lora.alpha=32 \
     actor_rollout_ref.model.lora.dropout=0.05 \
-    "actor_rollout_ref.model.lora.target_modules=[q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj]" \
+    "actor_rollout_ref.model.lora.target_modules=[linear_qkv,linear_proj,linear_fc1,linear_fc2]" \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
