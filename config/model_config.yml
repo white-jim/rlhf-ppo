@@ -1,6 +1,6 @@
-model_name: "Qwen/Qwen2.5-7B-Instruct"
-model_path: "models/qwen2.5-7b-instruct"
-tokenizer_path: "models/qwen2.5-7b-instruct"
+model_name: "Skywork/Skywork-Reward-V2-Qwen3-4B"
+model_path: "models/skywork-reward-v2-qwen3-4b"
+tokenizer_path: "models/skywork-reward-v2-qwen3-4b"
 
 device: "cuda"
 dtype: "bfloat16"
