@@ -24,7 +24,6 @@ torchrun \
   --nnodes=1 \
   --nproc_per_node=${N_GPUS} \
   -m verl.trainer.main_ppo \
-    algorithm=ppo \
     \
     data.train_files="${TRAIN_PARQUET}" \
     data.val_files="${VAL_PARQUET}" \
