@@ -36,6 +36,7 @@ torchrun \
     actor_rollout_ref.model.use_remove_padding=true \
     actor_rollout_ref.actor.optim.lr=5e-6 \
     actor_rollout_ref.actor.ppo_mini_batch_size=4 \
+    actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.actor.ppo_epochs=4 \
     actor_rollout_ref.actor.clip_ratio=0.2 \
     actor_rollout_ref.actor.entropy_coeff=0.0 \
