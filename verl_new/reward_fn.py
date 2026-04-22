@@ -43,7 +43,8 @@ def _load_model():
         rm_path,
         trust_remote_code=True,
         torch_dtype=getattr(torch, rm_dtype),
-    ).to(_device).eval()
+        device_map={"": _device},
+    ).eval()
 
 
 def compute_score(
