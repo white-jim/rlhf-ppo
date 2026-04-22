@@ -1,5 +1,5 @@
 # verl PPO 训练配置
-# 与 trl_ppo/config.yml 保持相同的超参数，适配 verl 的参数命名
+# 与 run_ppo.sh 保持一致的超参数，适配当前 verl 版本
 
 # ── 模型 ──────────────────────────────────────────────────────────────────────
 model_name: "Qwen/Qwen2.5-3B-Instruct"
@@ -29,7 +29,7 @@ ppo:
   learning_rate: 5e-6
   batch_size: 8                    # data.train_batch_size
   num_mini_batches: 2              # ppo_mini_batch_size = batch_size / num_mini_batches = 4
-  ppo_epochs: 4                    # actor.ppo_epochs
+  ppo_epochs: 4                    # actor_rollout_ref.actor.ppo_epochs
   gamma: 0.99
   lam: 0.95
   clip_range: 0.2
@@ -39,6 +39,7 @@ ppo:
   critic_lr: 1e-5
 
 max_prompt_length: 512
+max_response_length: 512
 use_gradient_checkpointing: true
 
 # ── 生成参数 ──────────────────────────────────────────────────────────────────
@@ -49,9 +50,9 @@ generation:
 # ── LoRA ──────────────────────────────────────────────────────────────────────
 lora:
   enable: true
-  r: 8
-  lora_alpha: 32
-  lora_dropout: 0.05
+  rank: 8                          # verl 使用 actor_rollout_ref.model.lora.rank
+  alpha: 32                        # verl 使用 actor_rollout_ref.model.lora.alpha
+  dropout: 0.05                    # verl 使用 actor_rollout_ref.model.lora.dropout
   target_modules:
     - "q_proj"
     - "v_proj"

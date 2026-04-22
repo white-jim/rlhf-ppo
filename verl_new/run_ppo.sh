@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # verl PPO 训练启动脚本
-# 用法: bash verl_ppo/run_ppo.sh
+# 用法: bash verl_new/run_ppo.sh
 
 set -euo pipefail
 
@@ -40,11 +40,10 @@ torchrun \
     actor_rollout_ref.actor.clip_ratio=0.2 \
     actor_rollout_ref.actor.entropy_coeff=0.0 \
     actor_rollout_ref.actor.fsdp_config.param_offload=false \
-    actor_rollout_ref.actor.lora.enable=true \
-    actor_rollout_ref.actor.lora.r=8 \
-    actor_rollout_ref.actor.lora.lora_alpha=32 \
-    actor_rollout_ref.actor.lora.lora_dropout=0.05 \
-    "actor_rollout_ref.actor.lora.target_modules=[q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj]" \
+    actor_rollout_ref.model.lora.rank=8 \
+    actor_rollout_ref.model.lora.alpha=32 \
+    actor_rollout_ref.model.lora.dropout=0.05 \
+    "actor_rollout_ref.model.lora.target_modules=[q_proj,v_proj,k_proj,o_proj,gate_proj,up_proj,down_proj]" \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
@@ -55,12 +54,15 @@ torchrun \
     critic.model.path="${MODEL_PATH}" \
     critic.optim.lr=1e-5 \
     critic.model.enable_gradient_checkpointing=true \
-    critic.model.fsdp_config.param_offload=false \
+    critic.fsdp.param_offload=false \
     \
-    reward_model.enable=true \
-    reward_model.model.path="${REWARD_MODEL_PATH}" \
-    reward_model.model.dtype=bfloat16 \
-    reward_model.model.fsdp_config.param_offload=true \
+    reward.custom_reward_function.path=verl_new/reward_fn.py \
+    reward.custom_reward_function.name=compute_score \
+    reward.reward_manager.source=register \
+    reward.reward_manager.name=naive \
+    reward.reward_model.enable=true \
+    reward.reward_model.model.path="${REWARD_MODEL_PATH}" \
+    reward.reward_model.model.trust_remote_code=true \
     \
     algorithm.kl_ctrl.kl_coef=0.15 \
     algorithm.gamma=0.99 \
@@ -68,7 +70,7 @@ torchrun \
     algorithm.adv_estimator=gae \
     \
     trainer.critic_warmup=0 \
-    trainer.logger=['console'] \
+    trainer.logger='["console"]' \
     trainer.project_name=verl_ppo_coig \
     trainer.experiment_name=qwen2.5-3b-ppo \
     trainer.n_gpus_per_node=${N_GPUS} \

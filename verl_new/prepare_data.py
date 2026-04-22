@@ -5,11 +5,11 @@ verl 要求每条数据包含以下字段：
   - prompt: list[dict]  — chat messages，格式为 [{"role": "user", "content": "..."}]
   - data_source: str    — 数据来源标识，reward_fn 用于路由
   - reward_model: dict  — {"ground_truth": ""}（neural RM 不需要 ground_truth）
-  - extra_info: dict    — 附加信息
+  - extra_info: dict    — 附加信息，需要包含 prompt_text 供 reward_fn 使用
 
 用法（从项目根目录）：
-    python verl_ppo/prepare_data.py
-    python verl_ppo/prepare_data.py --config verl_ppo/config.yml
+    python verl_new/prepare_data.py
+    python verl_new/prepare_data.py --config verl_new/config.yml
 """
 
 import argparse
@@ -40,7 +40,11 @@ def convert_jsonl_to_parquet(jsonl_path: str, output_dir: str, split: str = "tra
                     "data_source": "coig-cqia",
                     "prompt": [{"role": "user", "content": prompt_text}],
                     "reward_model": {"ground_truth": ""},
-                    "extra_info": {"index": idx, "split": split},
+                    "extra_info": {
+                        "index": idx,
+                        "split": split,
+                        "prompt_text": prompt_text,
+                    },
                 }
             )
 
@@ -54,7 +58,7 @@ def convert_jsonl_to_parquet(jsonl_path: str, output_dir: str, split: str = "tra
 
 def main():
     parser = argparse.ArgumentParser(description="Prepare COIG-CQIA data for verl PPO")
-    parser.add_argument("--config", default="verl_ppo/config.yml")
+    parser.add_argument("--config", default="verl_new/config.yml")
     args = parser.parse_args()
 
     cfg = load_config(args.config)
@@ -66,7 +70,6 @@ def main():
         sys.exit(1)
 
     convert_jsonl_to_parquet(train_jsonl, parquet_dir, split="train")
-    # val set: 取 train 的最后 200 条作为验证集（如无单独 val 文件）
     val_jsonl = cfg["dataset"].get("val_path")
     if val_jsonl and os.path.exists(val_jsonl):
         convert_jsonl_to_parquet(val_jsonl, parquet_dir, split="val")
@@ -89,7 +92,11 @@ def _make_val_from_train(train_jsonl: str, output_dir: str, n: int = 200):
                 "data_source": "coig-cqia",
                 "prompt": [{"role": "user", "content": prompt_text}],
                 "reward_model": {"ground_truth": ""},
-                "extra_info": {"index": idx, "split": "val"},
+                "extra_info": {
+                    "index": idx,
+                    "split": "val",
+                    "prompt_text": prompt_text,
+                },
             }
         )
     out_path = os.path.join(output_dir, "val.parquet")
