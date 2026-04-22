@@ -40,7 +40,6 @@ torchrun \
     actor_rollout_ref.actor.clip_ratio=0.2 \
     actor_rollout_ref.actor.entropy_coeff=0.0 \
     actor_rollout_ref.actor.fsdp_config.param_offload=false \
-    actor_rollout_ref.actor.fsdp_config.grad_offload=false \
     actor_rollout_ref.actor.lora.enable=true \
     actor_rollout_ref.actor.lora.r=8 \
     actor_rollout_ref.actor.lora.lora_alpha=32 \
