@@ -24,6 +24,8 @@ VAL_PARQUET="data/coig-cqia/verl_parquet/val.parquet"
 OUTPUT_DIR="outputs/verl_ppo"
 
 # ── 启动 ──────────────────────────────────────────────────────────────────────
+ray stop --force 2>/dev/null || true
+
 python -m verl.trainer.main_ppo \
     \
     data.train_files="${TRAIN_PARQUET}" \
