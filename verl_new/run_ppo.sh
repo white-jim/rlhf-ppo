@@ -51,7 +51,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
     actor_rollout_ref.rollout.max_model_len=1536 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
@@ -66,9 +66,9 @@ python -m verl.trainer.main_ppo \
     reward.reward_model.enable=true \
     reward.reward_model.model_path="${REWARD_MODEL_PATH}" \
     reward.reward_model.rollout.name=vllm \
-    reward.reward_model.rollout.gpu_memory_utilization=0.7 \
+    reward.reward_model.rollout.gpu_memory_utilization=0.2 \
     reward.reward_model.rollout.tensor_model_parallel_size=1 \
-    reward.reward_model.rollout.prompt_length=512 \
+    reward.reward_model.rollout.prompt_length=1024 \
     reward.reward_model.rollout.response_length=512 \
     \
     algorithm.kl_ctrl.kl_coef=0.15 \
