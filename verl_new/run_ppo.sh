@@ -62,7 +62,6 @@ torchrun \
     reward.reward_manager.name=naive \
     reward.reward_model.enable=true \
     reward.reward_model.model_path="${REWARD_MODEL_PATH}" \
-    reward.reward_model.trust_remote_code=true \
     \
     algorithm.kl_ctrl.kl_coef=0.15 \
     algorithm.gamma=0.99 \
