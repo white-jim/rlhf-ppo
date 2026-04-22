@@ -13,19 +13,17 @@ echo "===== Run started at $(date '+%Y-%m-%d %H:%M:%S') ====="
 
 # ── 环境变量 ──────────────────────────────────────────────────────────────────
 export CUDA_VISIBLE_DEVICES=1
-export REWARD_MODEL_PATH="models/internlm2-7b-reward"
-export REWARD_MODEL_DTYPE="bfloat16"
 
-# 单卡训练
 N_GPUS=1
 
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 MODEL_PATH="models/qwen2.5-3b-instruct"
+REWARD_MODEL_PATH="models/internlm2-7b-reward"
 TRAIN_PARQUET="data/coig-cqia/verl_parquet/train.parquet"
 VAL_PARQUET="data/coig-cqia/verl_parquet/val.parquet"
 OUTPUT_DIR="outputs/verl_ppo"
 
-# ── 启动（verl 使用 Ray，直接 python 启动，不用 torchrun）──────────────────────
+# ── 启动 ──────────────────────────────────────────────────────────────────────
 python -m verl.trainer.main_ppo \
     \
     data.train_files="${TRAIN_PARQUET}" \
@@ -51,7 +49,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
     actor_rollout_ref.rollout.max_model_len=1024 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=2 \
     actor_rollout_ref.ref.log_prob_micro_batch_size_per_gpu=2 \
@@ -63,11 +61,13 @@ python -m verl.trainer.main_ppo \
     critic.fsdp.param_offload=false \
     critic.ppo_micro_batch_size_per_gpu=2 \
     \
-    reward.custom_reward_function.path=verl_new/reward_fn.py \
-    reward.custom_reward_function.name=compute_score \
-    reward.reward_manager.source=register \
-    reward.reward_manager.name=naive \
-    reward.reward_model.enable=false \
+    reward.reward_model.enable=true \
+    reward.reward_model.model_path="${REWARD_MODEL_PATH}" \
+    reward.reward_model.rollout.name=vllm \
+    reward.reward_model.rollout.gpu_memory_utilization=0.8 \
+    reward.reward_model.rollout.tensor_model_parallel_size=1 \
+    reward.reward_model.rollout.prompt_length=512 \
+    reward.reward_model.rollout.response_length=512 \
     \
     algorithm.kl_ctrl.kl_coef=0.15 \
     algorithm.gamma=0.99 \
