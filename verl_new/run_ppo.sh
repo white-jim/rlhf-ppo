@@ -81,6 +81,8 @@ python -m verl.trainer.main_ppo \
     trainer.n_gpus_per_node=${N_GPUS} \
     trainer.nnodes=1 \
     trainer.save_freq=200 \
+    trainer.max_actor_ckpt_to_keep=4 \
+    trainer.max_critic_ckpt_to_keep=4 \
     trainer.total_epochs=1 \
     trainer.default_hdfs_dir=null \
     trainer.default_local_dir="${OUTPUT_DIR}"
