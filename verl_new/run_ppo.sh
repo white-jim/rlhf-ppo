@@ -18,7 +18,7 @@ N_GPUS=1
 
 # ── 路径 ──────────────────────────────────────────────────────────────────────
 MODEL_PATH="models/qwen2.5-3b-instruct"
-REWARD_MODEL_PATH="models/internlm2-7b-reward"
+REWARD_MODEL_PATH="models/skywork-reward-v2-qwen3-4b"
 TRAIN_PARQUET="data/coig-cqia/verl_parquet/train.parquet"
 VAL_PARQUET="data/coig-cqia/verl_parquet/val.parquet"
 OUTPUT_DIR="outputs/verl_ppo"
