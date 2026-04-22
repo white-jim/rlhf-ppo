@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# verl PPO 训练启动脚本
+# verl PPO 训练启动脚本（适配当前 verl 版本，使用 Ray 分布式）
 # 用法: bash verl_new/run_ppo.sh
 
 set -euo pipefail
@@ -9,7 +9,7 @@ export CUDA_VISIBLE_DEVICES=1
 export REWARD_MODEL_PATH="models/internlm2-7b-reward"
 export REWARD_MODEL_DTYPE="bfloat16"
 
-# 单卡训练,nproc_per_node=1
+# 单卡训练
 N_GPUS=1
 
 # ── 路径 ──────────────────────────────────────────────────────────────────────
@@ -18,12 +18,8 @@ TRAIN_PARQUET="data/coig-cqia/verl_parquet/train.parquet"
 VAL_PARQUET="data/coig-cqia/verl_parquet/val.parquet"
 OUTPUT_DIR="outputs/verl_ppo"
 
-# ── 启动 ──────────────────────────────────────────────────────────────────────
-torchrun \
-  --standalone \
-  --nnodes=1 \
-  --nproc_per_node=${N_GPUS} \
-  -m verl.trainer.main_ppo \
+# ── 启动（verl 使用 Ray，直接 python 启动，不用 torchrun）──────────────────────
+python -m verl.trainer.main_ppo \
     \
     data.train_files="${TRAIN_PARQUET}" \
     data.val_files="${VAL_PARQUET}" \
@@ -50,6 +46,7 @@ torchrun \
     actor_rollout_ref.rollout.top_p=1.0 \
     actor_rollout_ref.rollout.max_model_len=1024 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
+    actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.ref.fsdp_config.param_offload=true \
     \
     critic.model.path="${MODEL_PATH}" \
@@ -63,6 +60,9 @@ torchrun \
     reward.reward_manager.name=naive \
     reward.reward_model.enable=true \
     reward.reward_model.model_path="${REWARD_MODEL_PATH}" \
+    reward.reward_model.rollout.name=vllm \
+    reward.reward_model.rollout.tensor_model_parallel_size=1 \
+    reward.reward_model.rollout.gpu_memory_utilization=0.3 \
     \
     algorithm.kl_ctrl.kl_coef=0.15 \
     algorithm.gamma=0.99 \
