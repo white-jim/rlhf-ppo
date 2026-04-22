@@ -2,7 +2,8 @@
 /data/
 outputs/
 checkpoints/
-logs/
+/logs/
+/log/
 
 __pycache__/
 *.py[cod]
