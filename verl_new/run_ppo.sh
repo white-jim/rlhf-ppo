@@ -29,8 +29,10 @@ python -m verl.trainer.main_ppo \
     data.train_files="${TRAIN_PARQUET}" \
     data.val_files="${VAL_PARQUET}" \
     data.train_batch_size=8 \
-    data.max_prompt_length=512 \
+    data.max_prompt_length=1024 \
     data.max_response_length=512 \
+    data.filter_overlong_prompts=true \
+    data.truncation=left \
     \
     actor_rollout_ref.model.path="${MODEL_PATH}" \
     actor_rollout_ref.model.enable_gradient_checkpointing=true \
@@ -48,7 +50,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.load_format=safetensors \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
-    actor_rollout_ref.rollout.max_model_len=1024 \
+    actor_rollout_ref.rollout.max_model_len=1536 \
     actor_rollout_ref.rollout.gpu_memory_utilization=0.6 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=2 \
