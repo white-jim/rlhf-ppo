@@ -37,6 +37,8 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.model.path="${MODEL_PATH}" \
     actor_rollout_ref.model.enable_gradient_checkpointing=true \
     actor_rollout_ref.model.use_remove_padding=true \
+    actor_rollout_ref.model.lora_rank=8 \
+    actor_rollout_ref.model.lora_alpha=32 \
     actor_rollout_ref.actor.optim.lr=5e-6 \
     actor_rollout_ref.actor.ppo_mini_batch_size=4 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=2 \
@@ -44,11 +46,8 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.actor.clip_ratio=0.2 \
     actor_rollout_ref.actor.entropy_coeff=0.0 \
     actor_rollout_ref.actor.fsdp_config.param_offload=false \
-    actor_rollout_ref.model.lora.rank=8 \
-    actor_rollout_ref.model.lora.alpha=32 \
-    actor_rollout_ref.model.lora.dropout=0.05 \
-    "actor_rollout_ref.model.lora.target_modules=[linear_qkv,linear_proj,linear_fc1,linear_fc2]" \
     actor_rollout_ref.rollout.name=vllm \
+    actor_rollout_ref.rollout.load_format=safetensors \
     actor_rollout_ref.rollout.temperature=1.0 \
     actor_rollout_ref.rollout.top_p=1.0 \
     actor_rollout_ref.rollout.max_model_len=1024 \
