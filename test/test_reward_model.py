@@ -17,6 +17,8 @@ import json
 import os
 import sys
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 

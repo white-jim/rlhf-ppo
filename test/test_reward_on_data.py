@@ -8,7 +8,10 @@
 
 import argparse
 import json
+import os
 import random
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
