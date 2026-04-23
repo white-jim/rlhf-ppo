@@ -57,3 +57,10 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+# import os
+# os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+# from huggingface_hub import list_repo_files
+# for f in list_repo_files("THU-KEG/WildReward-8B"):
+#     print(f)  

@@ -68,7 +68,7 @@ python -m verl.trainer.main_ppo \
     reward.reward_model.enable=true \
     reward.reward_model.model_path="${REWARD_MODEL_PATH}" \
     reward.reward_model.rollout.name=vllm \
-    reward.reward_model.rollout.gpu_memory_utilization=0.2 \
+    reward.reward_model.rollout.gpu_memory_utilization=0.35 \
     reward.reward_model.rollout.tensor_model_parallel_size=1 \
     reward.reward_model.rollout.prompt_length=1024 \
     reward.reward_model.rollout.response_length=512 \
