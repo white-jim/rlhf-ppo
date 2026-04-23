@@ -13,8 +13,8 @@ verl 要求每条数据包含以下字段：
 """
 
 import os
-# os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
-os.environ["HF_ENDPOINT"] = "https://huggingface.mirrors.cn"
+os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
+# os.environ["HF_ENDPOINT"] = "https://huggingface.mirrors.cn"
 import argparse
 import re
 import sys
