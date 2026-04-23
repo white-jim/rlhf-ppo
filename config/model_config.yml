@@ -1,6 +1,6 @@
-model_name: "Skywork/Skywork-Reward-V2-Qwen3-4B"
-model_path: "models/skywork-reward-v2-qwen3-4b"
-tokenizer_path: "models/skywork-reward-v2-qwen3-4b"
+model_name: "THU-KEG/WildReward-8B"
+model_path: "models/wildreward-8b"
+tokenizer_path: "models/wildreward-8b"
 
 device: "cuda"
 dtype: "bfloat16"
