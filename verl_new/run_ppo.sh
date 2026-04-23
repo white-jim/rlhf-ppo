@@ -41,12 +41,12 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.model.use_remove_padding=true \
     actor_rollout_ref.model.lora_rank=8 \
     actor_rollout_ref.model.lora_alpha=32 \
-    actor_rollout_ref.actor.optim.lr=5e-6 \
+    actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.actor.ppo_mini_batch_size=4 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=2 \
-    actor_rollout_ref.actor.ppo_epochs=4 \
+    actor_rollout_ref.actor.ppo_epochs=2 \
     actor_rollout_ref.actor.clip_ratio=0.2 \
-    actor_rollout_ref.actor.entropy_coeff=0.0 \
+    actor_rollout_ref.actor.entropy_coeff=0.02 \
     actor_rollout_ref.actor.fsdp_config.param_offload=false \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.load_format=safetensors \
@@ -60,7 +60,7 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.ref.fsdp_config.param_offload=true \
     \
     critic.model.path="${MODEL_PATH}" \
-    critic.optim.lr=1e-5 \
+    critic.optim.lr=3e-6 \
     critic.model.enable_gradient_checkpointing=true \
     critic.fsdp.param_offload=false \
     critic.ppo_micro_batch_size_per_gpu=2 \
@@ -78,7 +78,7 @@ python -m verl.trainer.main_ppo \
     algorithm.lam=0.95 \
     algorithm.adv_estimator=gae \
     \
-    trainer.critic_warmup=0 \
+    trainer.critic_warmup=50 \
     trainer.logger='["console"]' \
     trainer.project_name=verl_ppo_coig \
     trainer.experiment_name=qwen2.5-3b-ppo \
