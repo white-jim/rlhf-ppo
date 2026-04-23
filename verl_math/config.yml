@@ -1,0 +1,51 @@
+# verl PPO 训练配置 — GSM8K_zh 数学推理
+# 与 run_ppo.sh 保持一致的超参数
+
+# ── 模型 ──────────────────────────────────────────────────────────────────────
+model_name: "Qwen/Qwen2.5-3B-Instruct"
+model_path: "models/qwen2.5-3b-instruct"
+tokenizer_path: "models/qwen2.5-3b-instruct"
+dtype: "bfloat16"
+
+visible_gpus: "1"
+
+# ── 数据集 ────────────────────────────────────────────────────────────────────
+dataset:
+  name: "meta-math/GSM8K_zh"
+  parquet_dir: "data/gsm8k_zh/verl_parquet"
+  train_path: "data/gsm8k_zh/verl_parquet/train.parquet"
+  val_path: "data/gsm8k_zh/verl_parquet/test.parquet"
+
+# ── PPO 超参数 ────────────────────────────────────────────────────────────────
+ppo:
+  learning_rate: 1e-6
+  batch_size: 8
+  num_mini_batches: 2
+  ppo_epochs: 2
+  gamma: 0.99
+  lam: 0.95
+  clip_range: 0.2
+  entropy_coeff: 0.02
+  kl_coef: 0.15
+  critic_lr: 3e-6
+
+max_prompt_length: 512
+max_response_length: 1024
+
+# ── 奖励 ──────────────────────────────────────────────────────────────────────
+reward:
+  type: "function"
+  function_path: "verl_math/reward_fn.py"
+  function_name: "compute_score"
+  # 规则型：答案匹配得 1.0，格式正确但答案错误得 0.1，否则 0
+
+# ── LoRA ──────────────────────────────────────────────────────────────────────
+lora:
+  enable: true
+  rank: 8
+  alpha: 32
+
+# ── 输出 ──────────────────────────────────────────────────────────────────────
+output_dir: "outputs/verl_ppo_gsm8k"
+save_freq: 200
+num_train_epochs: 1
